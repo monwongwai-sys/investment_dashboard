@@ -28,7 +28,29 @@ st.markdown("""
 #MainMenu, footer, header { visibility: hidden; }
 section[data-testid="stSidebar"] { display: none !important; }
 div[data-testid="collapsedControl"] { display: none !important; }
-.stApp { background: #f5f6fa; }
+
+/* ── Force Light Mode — ล็อกสีไม่ให้เปลี่ยนตาม Dark Mode ── */
+:root, html, body, .stApp, [data-theme="dark"], [data-theme="light"] {
+    color-scheme: light only !important;
+    --background-color: #f5f6fa !important;
+    --text-color: #1e293b !important;
+    --secondary-background-color: #ffffff !important;
+    filter: none !important;
+}
+.stApp {
+    background: #f5f6fa !important;
+    color: #1e293b !important;
+}
+/* ป้องกัน Streamlit inject dark theme */
+[data-testid="stAppViewContainer"] {
+    background-color: #f5f6fa !important;
+    color: #1e293b !important;
+}
+[data-testid="stHeader"] { background: transparent !important; }
+/* force สีพื้นหลังทุก element */
+.element-container, .stMarkdown, .block-container {
+    color: #1e293b !important;
+}
 section[data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e2e8f0; }
 section[data-testid="stSidebar"] * { color: #334155 !important; }
 section[data-testid="stSidebar"] label { font-size:12px !important; font-weight:600 !important; color:#64748b !important; text-transform:uppercase; letter-spacing:0.5px; }
@@ -207,6 +229,25 @@ def load_data():
     df = df.dropna(subset=['No.'])
     df['No.'] = df['No.'].astype(int)
     df['Status'] = df['Status'].fillna('N/A').str.strip()
+    # format Update_Date เป็น dd/mm/yyyy
+    if 'Update_Date' in df.columns:
+        def fmt_date(x):
+            try:
+                if pd.isna(x) or str(x).strip() in ('', 'nan', 'NaT', '-'):
+                    return '-'
+                s = str(x).strip()
+                # ถ้าเป็น Buddhist Era (ปี > 2100) ให้ลบ 543
+                d = pd.to_datetime(s, errors='coerce', dayfirst=True)
+                if pd.isna(d):
+                    return '-'
+                year = d.year
+                if year > 2100:  # Buddhist Era เช่น 2569
+                    year -= 543
+                    d = d.replace(year=year)
+                return d.strftime('%d/%m/%Y')
+            except:
+                return '-'
+        df['Update_Date'] = df['Update_Date'].apply(fmt_date)
     # ชื่อโครงการ — ถ้า xlsx มี Thai text ตรงให้ใช้เลย ไม่ต้อง map
     if 'Project_Name' in df.columns:
         df['ชื่อโครงการ'] = df['Project_Name'].apply(
@@ -245,7 +286,7 @@ def fmt(v, style='M'):
 
 PLOT_CFG = dict(
     paper_bgcolor='#ffffff', plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(family='Sarabun', color='#334155', size=11),
+    font=dict(family='Sarabun', color='#1e293b', size=12),
     margin=dict(l=16, r=16, t=56, b=16))
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -537,9 +578,9 @@ def page_dashboard():
             textposition='outside', textfont=dict(size=11, color='#000000')))
         max_y = max(pb['Total_Budget'].max(), pb['Budget_Used'].fillna(0).max()) * 1.3
         fig.update_layout(**PLOT_CFG,
-            title=dict(text='💰 งบประมาณตาม Plant', font=dict(size=13,color='#334155')),
+            title=dict(text='💰 งบประมาณตาม Plant', font=dict(size=13,color='#0f172a')),
             height=300, barmode='group', showlegend=True,
-            legend=dict(orientation='h', y=1.1, x=0),
+            legend=dict(orientation='h', y=1.1, x=0, font=dict(color='#1e293b', size=12)),
             xaxis=dict(showgrid=False, color='#64748b'),
             yaxis=dict(showgrid=True, gridcolor='#f1f5f9', color='#64748b',
                        tickformat=',.0f', range=[0, max_y]))
@@ -549,12 +590,12 @@ def page_dashboard():
         fig2 = go.Figure(go.Pie(labels=tc['ประเภทงบ'], values=tc['No.'], hole=0.55, marker=dict(colors=[
                 TYPE_COLOR.get(t, ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#94a3b8'][i%7])
                 for i,t in enumerate(tc['ประเภทงบ'])], line=dict(color='#fff',width=2)), textfont=dict(size=10), hovertemplate='<b>%{label}</b><br>%{value} โครงการ (%{percent})<extra></extra>'))
-        fig2.update_layout(**PLOT_CFG, title=dict(text="🏷️ Budget Type", font=dict(size=13,color='#334155')), height=300, legend=dict(font=dict(size=9)))
+        fig2.update_layout(**PLOT_CFG, title=dict(text="🏷️ Budget Type", font=dict(size=13,color='#0f172a')), height=300, legend=dict(font=dict(size=9)))
         st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar':False})
     with ch3:
         sc = df.groupby('Status')['No.'].count().reset_index().sort_values('No.',ascending=True)
         fig3 = go.Figure(go.Bar(x=sc['No.'], y=sc['Status'], orientation='h', marker_color=[STATUS_COLOR.get(s,'#94a3b8') for s in sc['Status']], text=sc['No.'], textposition='outside', textfont=dict(size=12,color='#334155')))
-        fig3.update_layout(**PLOT_CFG, title=dict(text="📊 Status", font=dict(size=13,color='#334155')), height=300, showlegend=False, xaxis=dict(showgrid=True,gridcolor='#f1f5f9',color='#64748b'), yaxis=dict(showgrid=False,color='#334155'))
+        fig3.update_layout(**PLOT_CFG, title=dict(text="📊 Status", font=dict(size=13,color='#0f172a')), height=300, showlegend=False, xaxis=dict(showgrid=True,gridcolor='#f1f5f9',color='#64748b'), yaxis=dict(showgrid=False,color='#1e293b',tickfont=dict(color='#1e293b',size=12)))
         st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar':False})
 
     pb_col, pie_col = st.columns([1.6, 1])
@@ -597,7 +638,7 @@ def page_dashboard():
             textinfo='label+percent', textfont=dict(size=11),
             hovertemplate='<b>%{label}</b><br>฿%{value:,.0f}<br>%{percent}<extra></extra>'))
         fig4.update_layout(**PLOT_CFG,
-            title=dict(text='🗺️ สัดส่วนงบตาม Plant', font=dict(size=13,color='#334155')),
+            title=dict(text='🗺️ สัดส่วนงบตาม Plant', font=dict(size=13,color='#0f172a')),
             height=420, showlegend=False)
         st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar':False})
 
@@ -612,7 +653,7 @@ def page_dashboard():
     tbl.insert(0, "เลือก", False)
     tbl["No."] = tbl["No."].astype(int)
     tbl["Progress_%"] = pd.to_numeric(tbl["Progress_%"], errors="coerce").fillna(0)
-    tbl["Update_Date"] = tbl["Update_Date"].fillna("-")
+    tbl["Update_Date"] = tbl["Update_Date"].astype(str).replace("nan", "-").replace("NaT", "-")
     PEMOJI = {"DC":"🔵 DC","KN":"🟢 KN","KS":"🟡 KS","PK":"🟣 PK","MCE":"🔴 MCE"}
     SEMOJI = {"Completed":"✅ Completed","PR/PO":"🔷 PR/PO",
               "On Process":"🟡 On Process","BOQ":"🔮 BOQ","N/A":"⬜ N/A"}
