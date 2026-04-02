@@ -296,30 +296,21 @@ def load_data():
             try:
                 if x is None or (isinstance(x, float) and pd.isna(x)):
                     return '-'
-                s = str(x).strip()
-                if s in ('', 'nan', 'NaT', '-', 'None'):
-                    return '-'
-                # ถ้าเป็น datetime object จาก Excel -> แปลงเป็น string dd/mm/yyyy ก่อน
                 import datetime as _dt
                 if isinstance(x, (_dt.datetime, _dt.date)):
-                    year = x.year
-                    if year > 2100: year -= 543
-                    return f"{x.day:02d}/{x.month:02d}/{year}"
-                # ถ้าเป็น string format dd/mm/yyyy หรือ d/m/yyyy
-                import re
-                m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})', s)
-                if m:
-                    d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
-                    if y > 2100: y -= 543
-                    return f"{d:02d}/{mo:02d}/{y}"
-                # fallback: ลอง parse แบบ dayfirst=True
-                d = pd.to_datetime(s, errors='coerce', dayfirst=True)
-                if pd.isna(d):
+                    return f"{x.day:02d}-{x.month:02d}-{x.year}"
+                s = str(x).strip()
+                if s in ('', 'nan', 'NaT', '-', 'None', 'NaN'):
                     return '-'
-                year = d.year
-                if year > 2100: year -= 543
-                d = d.replace(year=year)
-                return d.strftime('%d/%m/%Y')
+                # แปลง 2026-04-01 00:00:00 → 01-04-2026
+                if ' 00:00:00' in s:
+                    s = s.replace(' 00:00:00', '').strip()
+                # แปลง yyyy-mm-dd → dd-mm-yyyy
+                import re
+                m = re.match(r'(\d{4})-(\d{2})-(\d{2})', s)
+                if m:
+                    return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+                return s
             except:
                 return '-'
         df['Update_Date'] = df['Update_Date'].apply(fmt_date)
@@ -820,7 +811,7 @@ def page_dashboard():
 
     # ── Table ─────────────────────────────────────────────────────────────────
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ — กดปุ่ม ดูรายละเอียด ในตาราง</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ</div>', unsafe_allow_html=True)
 
     PBADGE = {
         'DC':'background:#dbeafe;color:#1d4ed8','KN':'background:#d1fae5;color:#065f46',
