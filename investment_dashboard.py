@@ -506,13 +506,51 @@ def page_detail():
     else:
         st.markdown('<div class="upload-box">📷 ยังไม่มีรูปภาพสำหรับโครงการนี้</div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:12px;color:#64748b;">📎 <strong>อัปโหลดรูปภาพ</strong> — สูงสุด 3 รูป (JPG, PNG, JPEG)</div>', unsafe_allow_html=True)
-    uploaded = st.file_uploader("x", type=["jpg","jpeg","png"], accept_multiple_files=True, key=f"up_{proj_no}", label_visibility="collapsed")
-    if uploaded:
-        for idx, f in enumerate(uploaded[:3]):
-            ext = f.name.rsplit('.',1)[-1].lower(); sfx = '' if idx==0 else f'_{idx}'
-            with open(os.path.join(IMG_DIR, f"{proj_no}{sfx}.{ext}"), 'wb') as out: out.write(f.read())
-        st.success(f"✅ บันทึก {min(len(uploaded),3)} รูปภาพแล้ว"); st.rerun()
+    # ── Upload — ต้องใส่ Password ก่อน ─────────────────────────────────────────
+    st.markdown("""<style>
+    /* file uploader — force white */
+    div[data-testid="stFileUploader"] {
+        background: #ffffff !important;
+        border-radius: 10px !important;
+        padding: 4px !important;
+        color-scheme: light !important;
+    }
+    div[data-testid="stFileUploader"] * {
+        color: #334155 !important;
+        -webkit-text-fill-color: #334155 !important;
+    }
+    div[data-testid="stFileUploaderDropzone"] {
+        background: #f8fafc !important;
+        border: 2px dashed #cbd5e1 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stTextInput"] input {
+        background: #ffffff !important;
+        color: #334155 !important;
+        -webkit-text-fill-color: #334155 !important;
+        color-scheme: light !important;
+    }
+    </style>""", unsafe_allow_html=True)
+
+    ADMIN_PASSWORD = "mpbf2569"  # เปลี่ยนรหัสได้ที่นี่
+    show_upload = st.checkbox("🔐 Admin — อัปโหลดรูปภาพ", key=f"show_up_{proj_no}")
+    if show_upload:
+        pwd = st.text_input("รหัสผ่าน Admin", type="password", key=f"pwd_{proj_no}")
+        if pwd == ADMIN_PASSWORD:
+            st.success("✅ เข้าสู่โหมด Admin")
+            uploaded = st.file_uploader(
+                "อัปโหลดรูปภาพ (สูงสุด 3 รูป JPG, PNG, JPEG)",
+                type=["jpg","jpeg","png"],
+                accept_multiple_files=True,
+                key=f"up_{proj_no}"
+            )
+            if uploaded:
+                for idx, f in enumerate(uploaded[:3]):
+                    ext = f.name.rsplit('.',1)[-1].lower(); sfx = '' if idx==0 else f'_{idx}'
+                    with open(os.path.join(IMG_DIR, f"{proj_no}{sfx}.{ext}"), 'wb') as out: out.write(f.read())
+                st.success(f"✅ บันทึก {min(len(uploaded),3)} รูปภาพแล้ว"); st.rerun()
+        elif pwd:
+            st.error("❌ รหัสผ่านไม่ถูกต้อง")
 
 # ══════════════════════════════════════════════════════════════════════════════
 def page_dashboard():
