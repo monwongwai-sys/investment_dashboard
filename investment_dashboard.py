@@ -347,6 +347,21 @@ PLOT_CFG = dict(
 # ══════════════════════════════════════════════════════════════════════════════
 def page_detail():
     row = df_all[df_all['No.'] == st.session_state.selected_no].iloc[0]
+    st.markdown("""<style>
+    div[data-testid="stButton"] > button {
+        background-color: #1d4ed8 !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 20px !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+    }
+    div[data-testid="stButton"] > button:hover {
+        background-color: #1e40af !important;
+        color: #ffffff !important;
+    }
+    </style>""", unsafe_allow_html=True)
     if st.button("← กลับหน้าหลัก"):
         st.session_state.page = 'dashboard'; st.rerun()
 
@@ -358,7 +373,7 @@ def page_detail():
         <div>
           <div class="proj-id">PROJECT #{int(row['No.']):02d} · {PLANT_FULL.get(row['Plant'], row['Plant'])}</div>
           <div class="proj-name">{to_thai_name(row['Project_Name'])}</div>
-          <span style="background:rgba(255,255,255,0.2);border-radius:6px;padding:3px 12px;font-size:12px;">{row['ประเภทงบ']}</span>
+          <span style="background:#ffffff;color:#1d4ed8;border-radius:6px;padding:3px 12px;font-size:12px;font-weight:600;">{row['ประเภทงบ']}</span>
         </div>
         <span class="stat-badge {sc}" style="font-size:14px;padding:8px 24px;align-self:center;">{row['Status']}</span>
       </div>
