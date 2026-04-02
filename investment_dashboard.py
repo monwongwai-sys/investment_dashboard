@@ -242,7 +242,7 @@ def load_data():
     try:
         r = _req.get(SHAREPOINT_DOWNLOAD_URL, timeout=15, allow_redirects=True)
         if r.status_code == 200 and len(r.content) > 5000:
-            df = pd.read_excel(io.BytesIO(r.content), sheet_name=0)
+            df = pd.read_excel(io.BytesIO(r.content), sheet_name=0, dtype={'Update_Date': str})
         else:
             raise Exception(f"status {r.status_code}")
     except Exception:
@@ -251,7 +251,7 @@ def load_data():
     # ── 2. Fallback: local xlsx หรือ csv ─────────────────────────────────────
     if df is None:
         if os.path.exists(XLSX_PATH):
-            df = pd.read_excel(XLSX_PATH, sheet_name=0)
+            df = pd.read_excel(XLSX_PATH, sheet_name=0, dtype={'Update_Date': str})
         else:
             with open(CSV_PATH, "rb") as f:
                 raw = f.read().replace(b'\xa0', b' ')
@@ -269,17 +269,31 @@ def load_data():
     if 'Update_Date' in df.columns:
         def fmt_date(x):
             try:
-                if pd.isna(x) or str(x).strip() in ('', 'nan', 'NaT', '-'):
+                if x is None or (isinstance(x, float) and pd.isna(x)):
                     return '-'
                 s = str(x).strip()
-                # ถ้าเป็น Buddhist Era (ปี > 2100) ให้ลบ 543
+                if s in ('', 'nan', 'NaT', '-', 'None'):
+                    return '-'
+                # ถ้าเป็น datetime object จาก Excel -> แปลงเป็น string dd/mm/yyyy ก่อน
+                import datetime as _dt
+                if isinstance(x, (_dt.datetime, _dt.date)):
+                    year = x.year
+                    if year > 2100: year -= 543
+                    return f"{x.day:02d}/{x.month:02d}/{year}"
+                # ถ้าเป็น string format dd/mm/yyyy หรือ d/m/yyyy
+                import re
+                m = re.match(r'(\d{1,2})/(\d{1,2})/(\d{4})', s)
+                if m:
+                    d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+                    if y > 2100: y -= 543
+                    return f"{d:02d}/{mo:02d}/{y}"
+                # fallback: ลอง parse แบบ dayfirst=True
                 d = pd.to_datetime(s, errors='coerce', dayfirst=True)
                 if pd.isna(d):
                     return '-'
                 year = d.year
-                if year > 2100:  # Buddhist Era เช่น 2569
-                    year -= 543
-                    d = d.replace(year=year)
+                if year > 2100: year -= 543
+                d = d.replace(year=year)
                 return d.strftime('%d/%m/%Y')
             except:
                 return '-'
@@ -465,18 +479,53 @@ def page_dashboard():
     if 'sel_status' not in st.session_state:  st.session_state['sel_status'] = statuses[:]
     if 'sel_types'  not in st.session_state:  st.session_state['sel_types']  = types[:]
 
-    # CSS popover button
+    # ── Header ────────────────────────────────────────────────────────────────
+    st.markdown(f'''<div style="background:linear-gradient(135deg,#1e3a8a,#2563eb) !important;
+        border-radius:16px 16px 0 0;padding:20px 28px 16px;
+        box-shadow:0 2px 0 rgba(29,78,216,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#ffffff !important;letter-spacing:1px;">📊 INVESTMENT BUDGET REPORT</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.85) !important;margin-top:3px;">MITR PHOL BIO FUEL · ปีงบประมาณ 2569</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:rgba(255,255,255,0.7) !important;letter-spacing:2px;">DATE</div>
+          <div style="font-size:20px;font-weight:700;color:#ffffff !important;">{datetime.today().strftime("%d %b %Y")}</div>
+        </div>
+      </div>
+    </div>''', unsafe_allow_html=True)
+
+    # ── Filter bar — popover ──────────────────────────────────────────────────
     st.markdown("""<style>
+    /* filter row ต่อจาก header */
+    div[data-testid="stHorizontalBlock"]:has(div[data-testid="stPopover"]) {
+        background: linear-gradient(135deg,#1e40af,#1d4ed8) !important;
+        border-radius: 0 0 16px 16px !important;
+        padding: 10px 28px 14px !important;
+        margin-top: -1px !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 4px 20px rgba(29,78,216,0.25) !important;
+    }
+    /* ปุ่ม popover — สีขาว ตัวหนังสือน้ำเงิน คงที่ทั้ง dark/light */
     div[data-testid="stPopover"] > div > button {
-        background: rgba(255,255,255,0.15) !important;
-        border: 1px solid rgba(255,255,255,0.35) !important;
-        border-radius: 8px !important; color: #fff !important;
-        font-size: 13px !important; font-weight: 600 !important;
-        padding: 6px 16px !important; box-shadow: none !important;
-        text-align: center !important; justify-content: center !important;
+        background-color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 8px !important;
+        color: #1d4ed8 !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        padding: 7px 18px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+        text-align: center !important;
+        justify-content: center !important;
+        min-width: 120px !important;
     }
     div[data-testid="stPopover"] > div > button:hover {
-        background: rgba(255,255,255,0.25) !important;
+        background-color: #dbeafe !important;
+        color: #1e40af !important;
+    }
+    div[data-testid="stPopover"] > div > button * {
+        color: #1d4ed8 !important;
     }
     div[data-testid="stPopover"] > div > button svg,
     div[data-testid="stPopover"] > div > button span[data-testid="stIconMaterial"] {
@@ -484,41 +533,11 @@ def page_dashboard():
     }
     </style>""", unsafe_allow_html=True)
 
-    # ── Header ────────────────────────────────────────────────────────────────
-    st.markdown(f'''
-    <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);
-        border-radius:16px 16px 0 0; padding:20px 28px 16px;
-        box-shadow:0 2px 0 rgba(29,78,216,0.4);">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:1px;">📊 INVESTMENT BUDGET REPORT</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:3px;">MITR PHOL BIO FUEL · ปีงบประมาณ 2569</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:2px;">DATE</div>
-          <div style="font-size:20px;font-weight:700;color:#fff;">{datetime.today().strftime("%d %b %Y")}</div>
-        </div>
-      </div>
-    </div>''', unsafe_allow_html=True)
-
-    # ── Filter bar ต่อใต้ header — ใช้ CSS ให้ดูเหมือนชิ้นเดียวกัน ───────────
-    st.markdown('''<style>
-    /* filter bar ต่อจาก header */
-    div[data-testid="stHorizontalBlock"]:has(div[data-testid="stPopover"]) {
-        background: linear-gradient(135deg,#1e40af,#1d4ed8);
-        border-radius: 0 0 16px 16px;
-        padding: 10px 28px 14px !important;
-        margin-top: -1px !important;
-        margin-bottom: 20px !important;
-        box-shadow: 0 4px 20px rgba(29,78,216,0.25);
-    }
-    </style>''', unsafe_allow_html=True)
     fc1, fc2, fc3, fsp = st.columns([1, 1, 1, 2])
 
     with fc1:
         n_p = len(st.session_state['sel_plants'])
-        lbl_p = "🏭 Plant"
-        with st.popover(lbl_p, use_container_width=True):
+        with st.popover("🏭 Plant", use_container_width=True):
             st.markdown("**เลือก Plant**")
             all_p = st.checkbox("ทั้งหมด", value=(n_p==len(plants)), key="chk_all_p")
             if all_p:
@@ -533,8 +552,7 @@ def page_dashboard():
 
     with fc2:
         n_s = len(st.session_state['sel_status'])
-        lbl_s = "📊 Status"
-        with st.popover(lbl_s, use_container_width=True):
+        with st.popover("📊 Status", use_container_width=True):
             st.markdown("**เลือก Status**")
             SEMOJI = {"Completed":"✅","PR/PO":"🔷","On Process":"🟡","BOQ":"🔮","N/A":"⬜"}
             all_s = st.checkbox("ทั้งหมด", value=(n_s==len(statuses)), key="chk_all_s")
@@ -549,8 +567,7 @@ def page_dashboard():
 
     with fc3:
         n_t = len(st.session_state['sel_types'])
-        lbl_t = "🏷️ ประเภทงบ"
-        with st.popover(lbl_t, use_container_width=True):
+        with st.popover("🏷️ ประเภทงบ", use_container_width=True):
             st.markdown("**เลือกประเภทงบ**")
             all_t = st.checkbox("ทั้งหมด", value=(n_t==len(types)), key="chk_all_t")
             if all_t:
@@ -681,19 +698,7 @@ def page_dashboard():
 
     # ── Table ─────────────────────────────────────────────────────────────────
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ</div>', unsafe_allow_html=True)
-
-    opts = ["— เลือกโครงการเพื่อดูรายละเอียด —"] + [
-        f"#{int(r['No.']):02d}  {r['ชื่อโครงการ']}" for _, r in df.iterrows()
-    ]
-    sel = st.selectbox("เลือกโครงการ", opts, label_visibility="collapsed", key="proj_sel")
-    if sel != "— เลือกโครงการเพื่อดูรายละเอียด —":
-        no = int(sel.split()[0].replace("#",""))
-        st.session_state.selected_no = no
-        st.session_state.page = "detail"
-        st.rerun()
-
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ — กดปุ่ม ดูรายละเอียด ในตาราง</div>', unsafe_allow_html=True)
 
     PBADGE = {
         'DC':'background:#dbeafe;color:#1d4ed8','KN':'background:#d1fae5;color:#065f46',
@@ -736,43 +741,80 @@ def page_dashboard():
             f'<span style="font-size:11px;font-weight:700;color:{bar_c};white-space:nowrap;">{pct:.0f}%</span>'
             '</div>'
         )
+
+        # ชื่อโครงการ + ปุ่มดูรายละเอียดใต้ชื่อ
+        name_cell = (
+            '<div style="font-weight:500;color:#1e293b;margin-bottom:5px;">' + name + '</div>'
+            '<a href="?proj=' + str(no) + '" target="_self" '
+            'style="display:inline-block;padding:2px 10px;background:#1d4ed8;color:#fff;'
+            'border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">'
+            'ดูรายละเอียด →</a>'
+        )
+
         rows_html += (
-            "<tr style='border-bottom:1px solid #f1f5f9;'>"
-            f"<td style='padding:9px 10px;text-align:center;color:#94a3b8;font-size:12px;'>{no}</td>"
-            f"<td style='padding:9px 8px;'><span style='display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{pb_css}'>{plant}</span></td>"
-            f"<td style='padding:9px 8px;font-size:12px;color:#64748b;'>{ptype}</td>"
-            f"<td style='padding:9px 8px;font-weight:500;color:#1e293b;'>{name}</td>"
-            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:#334155;'>{total}</td>"
-            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:#10b981;font-weight:600;'>{used}</td>"
-            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:{rc};font-weight:600;'>{remain}</td>"
-            f"<td style='padding:9px 10px;'>{pct_cell}</td>"
-            f"<td style='padding:9px 8px;'><span style='display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{sb_css}'>{status}</span></td>"
-            f"<td style='padding:9px 8px;font-size:11px;color:#94a3b8;'>{upd}</td>"
-            "</tr>"
+            f'<tr style="border-bottom:1px solid #f1f5f9;">'
+            f'<td style="padding:10px;text-align:center;color:#94a3b8;font-size:12px;">{no}</td>'
+            f'<td style="padding:10px 8px;"><span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{pb_css}">{plant}</span></td>'
+            f'<td style="padding:10px 8px;font-size:12px;color:#64748b;">{ptype}</td>'
+            f'<td style="padding:10px 8px;">{name_cell}</td>'
+            f'<td style="padding:10px 8px;text-align:right;font-size:12px;color:#334155;">{total}</td>'
+            f'<td style="padding:10px 8px;text-align:right;font-size:12px;color:#10b981;font-weight:600;">{used}</td>'
+            f'<td style="padding:10px 8px;text-align:right;font-size:12px;color:{rc};font-weight:600;">{remain}</td>'
+            f'<td style="padding:10px 10px;">{pct_cell}</td>'
+            f'<td style="padding:10px 8px;"><span style="display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{sb_css}">{status}</span></td>'
+            f'<td style="padding:10px 8px;font-size:11px;color:#94a3b8;">{upd}</td>'
+            f'</tr>'
         )
 
     table_html = (
-        '<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.06);margin-bottom:8px;">'
-        '<div style="overflow-x:auto;max-height:480px;overflow-y:auto;">'
+        '<div style="background:#fff;border-radius:14px;overflow:hidden;'
+        'box-shadow:0 1px 8px rgba(0,0,0,0.06);margin-bottom:8px;">'
+        '<div style="overflow-x:auto;max-height:520px;overflow-y:auto;">'
         '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Sarabun,sans-serif;">'
-        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">'
-        '<th style="padding:10px;text-align:center;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;width:44px">No.</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:75px">Plant</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:175px">ประเภทงบ</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;">ชื่อโครงการ</th>'
-        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">งบรวม (฿)</th>'
-        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">ใช้แล้ว (฿)</th>'
-        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">คงเหลือ (฿)</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:135px">Progress</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:105px">Status</th>'
-        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:90px">Updated</th>'
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2;">'
+        '<th style="padding:10px;text-align:center;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:44px">No.</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:80px">Plant</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:170px">ประเภทงบ</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;">ชื่อโครงการ</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:115px">งบรวม (฿)</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:115px">ใช้แล้ว (฿)</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:115px">คงเหลือ (฿)</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:135px">Progress</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:105px">Status</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:90px">Updated</th>'
         '</tr></thead>'
         f'<tbody>{rows_html}</tbody>'
         '</table></div></div>'
     )
     st.markdown(table_html, unsafe_allow_html=True)
 
+    # รับ click จาก ปุ่มดูรายละเอียด ผ่าน query params
+    params = st.query_params
+    if "proj" in params:
+        try:
+            no = int(params["proj"])
+            st.query_params.clear()
+            st.session_state.selected_no = no
+            st.session_state.page = "detail"
+            st.rerun()
+        except Exception:
+            pass
+
     st.markdown('<div style="text-align:center;padding:20px 0 4px;font-size:11px;color:#94a3b8;">MITR PHOL BIO FUEL · Investment Budget Dashboard · ปีงบประมาณ 2569</div>', unsafe_allow_html=True)
+
+
+# ── Router ───────────────────────────────────────────────────────────────────
+# รับ click จากปุ่ม ดูรายละเอียด ผ่าน query param
+_params = st.query_params
+if "proj" in _params:
+    try:
+        _no = int(_params["proj"])
+        st.query_params.clear()
+        st.session_state.selected_no = _no
+        st.session_state.page = "detail"
+        st.rerun()
+    except Exception:
+        pass
 
 if st.session_state.page == 'detail' and st.session_state.selected_no is not None:
     page_detail()
