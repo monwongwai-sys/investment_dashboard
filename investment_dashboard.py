@@ -152,6 +152,28 @@ div[data-testid="stPlotlyChart"] {
     overflow: hidden;
 }
 
+/* Force header สีน้ำเงินทั้ง dark/light mode */
+.force-header {
+    background: linear-gradient(135deg,#1e3a8a,#2563eb) !important;
+    border-radius: 16px !important;
+    padding: 20px 28px 16px !important;
+    box-shadow: 0 4px 20px rgba(29,78,216,0.3) !important;
+    margin-bottom: 12px !important;
+    color-scheme: light !important;
+}
+.force-header * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+.force-header .sub-text {
+    color: rgba(255,255,255,0.85) !important;
+    -webkit-text-fill-color: rgba(255,255,255,0.85) !important;
+}
+.force-header .date-label {
+    color: rgba(255,255,255,0.7) !important;
+    -webkit-text-fill-color: rgba(255,255,255,0.7) !important;
+}
+
 /* Lightbox */
 .lb-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; cursor:zoom-out; }
 .lb-overlay.active { display:flex; }
@@ -351,15 +373,19 @@ def page_detail():
     div[data-testid="stButton"] > button {
         background-color: #1d4ed8 !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 8px 20px !important;
         font-weight: 600 !important;
         font-size: 13px !important;
+        width: auto !important;
+        display: inline-block !important;
     }
     div[data-testid="stButton"] > button:hover {
         background-color: #1e40af !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
     </style>""", unsafe_allow_html=True)
     if st.button("← กลับหน้าหลัก"):
@@ -500,17 +526,16 @@ def page_dashboard():
     if 'sel_types'  not in st.session_state:  st.session_state['sel_types']  = types[:]
 
     # ── Header ────────────────────────────────────────────────────────────────
-    st.markdown(f'''<div style="background:linear-gradient(135deg,#1e3a8a,#2563eb) !important;
-        border-radius:16px;margin-bottom:12px;padding:20px 28px 16px;
-        box-shadow:0 2px 0 rgba(29,78,216,0.4);">
+    st.markdown(f'''
+    <div class="force-header">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div style="font-size:22px;font-weight:700;color:#ffffff !important;letter-spacing:1px;">📊 INVESTMENT BUDGET REPORT</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.85) !important;margin-top:3px;">MITR PHOL BIO FUEL · ปีงบประมาณ 2569</div>
+          <div style="font-size:22px;font-weight:700;letter-spacing:1px;">📊 INVESTMENT BUDGET REPORT</div>
+          <div class="sub-text" style="font-size:13px;margin-top:3px;">MITR PHOL BIO FUEL · ปีงบประมาณ 2569</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:10px;color:rgba(255,255,255,0.7) !important;letter-spacing:2px;">DATE</div>
-          <div style="font-size:20px;font-weight:700;color:#ffffff !important;">{datetime.today().strftime("%d %b %Y")}</div>
+          <div class="date-label" style="font-size:10px;letter-spacing:2px;">DATE</div>
+          <div style="font-size:20px;font-weight:700;">{datetime.today().strftime("%d %b %Y")}</div>
         </div>
       </div>
     </div>''', unsafe_allow_html=True)
