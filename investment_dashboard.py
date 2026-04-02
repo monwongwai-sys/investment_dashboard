@@ -253,6 +253,9 @@ def load_data():
         if os.path.exists(XLSX_PATH):
             df = pd.read_excel(XLSX_PATH, sheet_name=0, dtype={'Update_Date': str})
         else:
+            if not os.path.exists(CSV_PATH):
+                st.error("❌ ไม่พบไฟล์ข้อมูล กรุณาวาง Investment_Budget_69.xlsx หรือ Investment_Budget_69_Sheet1_.csv ในโฟลเดอร์เดียวกับ investment_dashboard.py")
+                st.stop()
             with open(CSV_PATH, "rb") as f:
                 raw = f.read().replace(b'\xa0', b' ')
             df = pd.read_csv(io.BytesIO(raw), encoding='cp874', on_bad_lines='skip')
@@ -298,14 +301,16 @@ def load_data():
             except:
                 return '-'
         df['Update_Date'] = df['Update_Date'].apply(fmt_date)
-    # ชื่อโครงการ — ถ้า xlsx มี Thai text ตรงให้ใช้เลย ไม่ต้อง map
+    # ชื่อโครงการและประเภทงบ — xlsx มี Thai text ตรงแล้ว
     if 'Project_Name' in df.columns:
         df['ชื่อโครงการ'] = df['Project_Name'].apply(
-            lambda x: x if (pd.notna(x) and not str(x).startswith('?')) else to_thai_name(x)
+            lambda x: str(x).strip() if pd.notna(x) and str(x).strip() not in ('nan','') and not str(x).startswith('?')
+            else to_thai_name(x)
         )
     if 'Type_Project' in df.columns:
         df['ประเภทงบ'] = df['Type_Project'].apply(
-            lambda x: x if (pd.notna(x) and not str(x).startswith('?')) else to_thai_type(x)
+            lambda x: str(x).strip() if pd.notna(x) and str(x).strip() not in ('nan','') and not str(x).startswith('?')
+            else to_thai_type(x)
         )
     return df
 
@@ -318,14 +323,14 @@ PLANT_COLOR  = {'DC':'#3b82f6','KN':'#10b981','KS':'#f59e0b','PK':'#8b5cf6','MCE
 STATUS_COLOR = {'Completed':'#16a34a','PR/PO':'#1d4ed8','On Process':'#ca8a04','BOQ':'#7c3aed','N/A':'#94a3b8'}
 STATUS_CSS   = {'Completed':'s-completed','PR/PO':'s-prpo','On Process':'s-onprocess','BOQ':'s-boq','N/A':'s-na'}
 TYPE_COLOR   = {
-    'งบลงทุน (Investment Budget)': '#ef4444',
-    'งบลงทุนทั่วไป':              '#ef4444',
-    'ซ่อมบำรุง (Maintenance)':    '#3b82f6',
-    'งบสิ่งแวดล้อม':              '#10b981',
-    'ความปลอดภัย/SHE (Safety)':  '#f59e0b',
-    'งบด้านความปลอดภัย':         '#f59e0b',
     'งบปรับปรุงประสิทธิภาพการผลิต': '#8b5cf6',
-    'อื่นๆ':                      '#94a3b8',
+    'งบสิ่งแวดล้อม':                '#10b981',
+    'งบลงทุนทั่วไป':               '#ef4444',
+    'งบด้านความปลอดภัย':           '#f59e0b',
+    'งบลงทุน (Investment Budget)': '#ef4444',
+    'ซ่อมบำรุง (Maintenance)':     '#3b82f6',
+    'ความปลอดภัย/SHE (Safety)':   '#f59e0b',
+    'อื่นๆ':                       '#94a3b8',
 }
 PLANT_FULL   = {'DC':'MPBF DC','KN':'MPBF KN','KS':'MPBF KS','PK':'MPBF PK','MCE':'MCE'}
 
@@ -481,7 +486,7 @@ def page_dashboard():
 
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown(f'''<div style="background:linear-gradient(135deg,#1e3a8a,#2563eb) !important;
-        border-radius:16px 16px 0 0;padding:20px 28px 16px;
+        border-radius:16px;margin-bottom:12px;padding:20px 28px 16px;
         box-shadow:0 2px 0 rgba(29,78,216,0.4);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
@@ -497,14 +502,11 @@ def page_dashboard():
 
     # ── Filter bar — popover ──────────────────────────────────────────────────
     st.markdown("""<style>
-    /* filter row ต่อจาก header */
+    /* filter row — ไม่มีพื้นหลัง */
     div[data-testid="stHorizontalBlock"]:has(div[data-testid="stPopover"]) {
-        background: linear-gradient(135deg,#1e40af,#1d4ed8) !important;
-        border-radius: 0 0 16px 16px !important;
-        padding: 10px 28px 14px !important;
-        margin-top: -1px !important;
-        margin-bottom: 20px !important;
-        box-shadow: 0 4px 20px rgba(29,78,216,0.25) !important;
+        background: transparent !important;
+        padding: 8px 0 !important;
+        margin-bottom: 12px !important;
     }
     /* ปุ่ม popover — สีขาว ตัวหนังสือน้ำเงิน คงที่ทั้ง dark/light */
     div[data-testid="stPopover"] > div > button {
