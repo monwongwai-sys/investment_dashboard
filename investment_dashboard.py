@@ -112,9 +112,9 @@ section[data-testid="stSidebar"] label { font-size:12px !important; font-weight:
 .pb-pct  { font-weight:700; }
 .pb-track { height:9px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
 .pb-fill  { height:100%; border-radius:5px; }
-.detail-header { background:linear-gradient(135deg,#1e3a8a,#2563eb); border-radius:16px; padding:24px 32px; margin-bottom:24px; color:#fff; box-shadow:0 4px 20px rgba(29,78,216,0.2); }
-.detail-header .proj-id { font-size:12px; color:rgba(255,255,255,0.6); letter-spacing:2px; }
-.detail-header .proj-name { font-size:22px; font-weight:700; margin:6px 0; }
+.detail-header { background:linear-gradient(135deg,#1e3a8a,#2563eb) !important; border-radius:16px !important; padding:24px 32px !important; margin-bottom:24px !important; color:#fff !important; box-shadow:0 4px 20px rgba(29,78,216,0.25) !important; }
+.detail-header .proj-id { font-size:12px; color:rgba(255,255,255,0.7) !important; letter-spacing:2px; }
+.detail-header .proj-name { font-size:22px; font-weight:700 !important; margin:6px 0; color:#ffffff !important; }
 .info-card { background:#fff; border-radius:14px; padding:20px; box-shadow:0 1px 8px rgba(0,0,0,0.06); height:100%; }
 .info-card .card-title { font-size:11px; color:#94a3b8; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
 .info-card .card-body  { font-size:14px; color:#334155; line-height:1.7; }
