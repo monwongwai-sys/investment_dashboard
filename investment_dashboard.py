@@ -119,11 +119,11 @@ section[data-testid="stSidebar"] label { font-size:12px !important; font-weight:
 .info-card .card-title { font-size:11px; color:#94a3b8; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
 .info-card .card-body  { font-size:14px; color:#334155; line-height:1.7; }
 .stat-badge { display:inline-block; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; }
-.s-completed { background:#dcfce7; color:#16a34a; }
-.s-prpo      { background:#dbeafe; color:#1d4ed8; }
-.s-onprocess { background:#fef9c3; color:#ca8a04; }
-.s-boq       { background:#f3e8ff; color:#7c3aed; }
-.s-na        { background:#f1f5f9; color:#94a3b8; }
+.s-completed { background:#dcfce7; color:#16a34a; }  /* เขียว */
+.s-prpo      { background:#dbeafe; color:#1d4ed8; }  /* ฟ้า — PR/PO, PR */
+.s-onprocess { background:#dbeafe; color:#1d4ed8; }  /* น้ำเงิน — On Process/Progress */
+.s-boq       { background:#f1f5f9; color:#64748b; }  /* เทา */
+.s-na        { background:#fef9c3; color:#854d0e; }  /* เหลือง — N/A, Not Start */
 .stButton > button { background:#1d4ed8 !important; color:#fff !important; border:none !important; border-radius:8px !important; padding:8px 20px !important; font-weight:600 !important; font-size:13px !important; }
 .stButton > button:hover { background:#1e40af !important; }
 .upload-box { border:2px dashed #cbd5e1; border-radius:12px; padding:24px; text-align:center; color:#94a3b8; font-size:13px; }
@@ -290,6 +290,9 @@ def load_data():
     df = df.dropna(subset=['No.'])
     df['No.'] = df['No.'].astype(int)
     df['Status'] = df['Status'].fillna('N/A').str.strip()
+    # เปลี่ยนชื่อ Status
+    STATUS_RENAME = {'N/A': 'Not Start', 'PR/PO': 'PR', 'On Process': 'On Progress'}
+    df['Status'] = df['Status'].map(lambda s: STATUS_RENAME.get(s, s))
     # format Update_Date เป็น dd/mm/yyyy
     if 'Update_Date' in df.columns:
         def fmt_date(x):
@@ -333,16 +336,16 @@ if 'page' not in st.session_state:        st.session_state.page = 'dashboard'
 if 'selected_no' not in st.session_state: st.session_state.selected_no = None
 
 PLANT_COLOR  = {'DC':'#3b82f6','KN':'#10b981','KS':'#f59e0b','PK':'#8b5cf6','MCE':'#ef4444'}
-STATUS_COLOR = {'Completed':'#16a34a','PR/PO':'#1d4ed8','On Process':'#ca8a04','BOQ':'#7c3aed','N/A':'#94a3b8'}
-STATUS_CSS   = {'Completed':'s-completed','PR/PO':'s-prpo','On Process':'s-onprocess','BOQ':'s-boq','N/A':'s-na'}
+STATUS_COLOR = {'Completed':'#16a34a','PR/PO':'#3b82f6','PR':'#3b82f6','On Process':'#1d4ed8','On Progress':'#1d4ed8','BOQ':'#94a3b8','N/A':'#eab308','Not Start':'#eab308'}
+STATUS_CSS   = {'Completed':'s-completed','PR/PO':'s-prpo','PR':'s-prpo','On Process':'s-onprocess','On Progress':'s-onprocess','BOQ':'s-boq','N/A':'s-na','Not Start':'s-na'}
 TYPE_COLOR   = {
-    'งบปรับปรุงประสิทธิภาพการผลิต': '#8b5cf6',
-    'งบสิ่งแวดล้อม':                '#10b981',
-    'งบลงทุนทั่วไป':               '#ef4444',
-    'งบด้านความปลอดภัย':           '#f59e0b',
-    'งบลงทุน (Investment Budget)': '#ef4444',
+    'งบปรับปรุงประสิทธิภาพการผลิต': '#3b82f6',  # น้ำเงิน
+    'งบสิ่งแวดล้อม':                '#10b981',  # เขียว
+    'งบลงทุนทั่วไป':               '#94a3b8',  # เทา
+    'งบด้านความปลอดภัย':           '#ef4444',  # แดง
+    'งบลงทุน (Investment Budget)': '#94a3b8',
     'ซ่อมบำรุง (Maintenance)':     '#3b82f6',
-    'ความปลอดภัย/SHE (Safety)':   '#f59e0b',
+    'ความปลอดภัย/SHE (Safety)':   '#ef4444',
     'อื่นๆ':                       '#94a3b8',
 }
 PLANT_FULL   = {'DC':'MPBF DC','KN':'MPBF KN','KS':'MPBF KS','PK':'MPBF PK','MCE':'MCE'}
@@ -759,8 +762,13 @@ def page_dashboard():
         fig2.update_layout(**PLOT_CFG, title=dict(text="🏷️ Budget Type", font=dict(size=13,color='#0f172a')), height=300, legend=dict(font=dict(size=9)))
         st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar':False})
     with ch3:
-        sc = df.groupby('Status')['No.'].count().reset_index().sort_values('No.',ascending=True)
-        fig3 = go.Figure(go.Bar(x=sc['No.'], y=sc['Status'], orientation='h', marker_color=[STATUS_COLOR.get(s,'#94a3b8') for s in sc['Status']], text=sc['No.'], textposition='outside', textfont=dict(size=12,color='#334155')))
+        STATUS_ORDER = ['Not Start','N/A','BOQ','PR/PO','PR','On Process','On Progress','Completed']
+        sc = df.groupby('Status')['No.'].count().reset_index()
+        sc['order'] = sc['Status'].map(lambda s: STATUS_ORDER.index(s) if s in STATUS_ORDER else 99)
+        sc = sc.sort_values('order', ascending=True)
+        fig3 = go.Figure(go.Bar(x=sc['No.'], y=sc['Status'], orientation='h',
+            marker_color=[STATUS_COLOR.get(s,'#94a3b8') for s in sc['Status']],
+            text=sc['No.'], textposition='outside', textfont=dict(size=12,color='#334155')))
         fig3.update_layout(**PLOT_CFG, title=dict(text="📊 Status", font=dict(size=13,color='#0f172a')), height=300, showlegend=False, xaxis=dict(showgrid=True,gridcolor='#f1f5f9',color='#64748b'), yaxis=dict(showgrid=False,color='#1e293b',tickfont=dict(color='#1e293b',size=12)))
         st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar':False})
 
@@ -819,9 +827,14 @@ def page_dashboard():
         'MCE':'background:#fee2e2;color:#991b1b'
     }
     SBADGE = {
-        'Completed':'background:#dcfce7;color:#16a34a','PR/PO':'background:#dbeafe;color:#1d4ed8',
-        'On Process':'background:#fef9c3;color:#854d0e','BOQ':'background:#f3e8ff;color:#6b21a8',
-        'N/A':'background:#f1f5f9;color:#64748b'
+        'Completed':   'background:#dcfce7;color:#16a34a',
+        'PR/PO':       'background:#dbeafe;color:#1d4ed8',
+        'PR':          'background:#dbeafe;color:#1d4ed8',
+        'On Process':  'background:#dbeafe;color:#1d4ed8',
+        'On Progress': 'background:#dbeafe;color:#1d4ed8',
+        'BOQ':         'background:#f1f5f9;color:#64748b',
+        'N/A':         'background:#fef9c3;color:#854d0e',
+        'Not Start':   'background:#fef9c3;color:#854d0e',
     }
 
     rows_html = ""
