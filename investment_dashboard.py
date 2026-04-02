@@ -531,53 +531,95 @@ def page_dashboard():
     div[data-testid="stPopover"] > div > button span[data-testid="stIconMaterial"] {
         display: none !important;
     }
+    /* popover dropdown content — force white background */
+    div[data-testid="stPopover"] > div[data-testid="stPopoverBody"],
+    div[data-testid="stPopoverBody"],
+    div[data-baseweb="popover"] div,
+    div[data-baseweb="popover"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    div[data-testid="stPopoverBody"] label,
+    div[data-testid="stPopoverBody"] p,
+    div[data-testid="stPopoverBody"] span {
+        color: #1e293b !important;
+    }
+    div[data-testid="stPopoverBody"] [data-testid="stCheckbox"] label {
+        color: #1e293b !important;
+    }
     </style>""", unsafe_allow_html=True)
 
     fc1, fc2, fc3, fsp = st.columns([1, 1, 1, 2])
 
     with fc1:
         n_p = len(st.session_state['sel_plants'])
+        is_all_p = (n_p == len(plants))
         with st.popover("🏭 Plant", use_container_width=True):
             st.markdown("**เลือก Plant**")
-            all_p = st.checkbox("ทั้งหมด", value=(n_p==len(plants)), key="chk_all_p")
-            if all_p:
+            all_p = st.checkbox("ทั้งหมด", value=is_all_p, key="chk_all_p")
+            if all_p and not is_all_p:
+                # ติ๊ก ทั้งหมด → clear เลือกทุกอัน
                 st.session_state['sel_plants'] = plants[:]
+                st.rerun()
+            elif not all_p and is_all_p:
+                # untick ทั้งหมด → clear ทั้งหมด ให้เลือกเอง
+                st.session_state['sel_plants'] = []
+                st.rerun()
+            PEMOJI = {"DC":"🔵","KN":"🟢","KS":"🟡","PK":"🟣","MCE":"🔴"}
             for p in plants:
-                PEMOJI = {"DC":"🔵","KN":"🟢","KS":"🟡","PK":"🟣","MCE":"🔴"}
-                val = st.checkbox(f"{PEMOJI.get(p,'•')} {p}", value=(p in st.session_state['sel_plants']), key=f"chk_p_{p}")
-                if val and p not in st.session_state['sel_plants']:
-                    st.session_state['sel_plants'].append(p)
-                elif not val and p in st.session_state['sel_plants']:
-                    st.session_state['sel_plants'].remove(p)
+                # ถ้า ทั้งหมด ถูกติ๊ก ให้ disable checkbox ย่อย
+                p_val = st.checkbox(
+                    f"{PEMOJI.get(p,'•')} {p}",
+                    value=(p in st.session_state['sel_plants']),
+                    key=f"chk_p_{p}",
+                    disabled=all_p
+                )
+                if not all_p:
+                    if p_val and p not in st.session_state['sel_plants']:
+                        st.session_state['sel_plants'].append(p)
+                    elif not p_val and p in st.session_state['sel_plants']:
+                        st.session_state['sel_plants'].remove(p)
 
     with fc2:
         n_s = len(st.session_state['sel_status'])
+        is_all_s = (n_s == len(statuses))
         with st.popover("📊 Status", use_container_width=True):
             st.markdown("**เลือก Status**")
             SEMOJI = {"Completed":"✅","PR/PO":"🔷","On Process":"🟡","BOQ":"🔮","N/A":"⬜"}
-            all_s = st.checkbox("ทั้งหมด", value=(n_s==len(statuses)), key="chk_all_s")
-            if all_s:
+            all_s = st.checkbox("ทั้งหมด", value=is_all_s, key="chk_all_s")
+            if all_s and not is_all_s:
                 st.session_state['sel_status'] = statuses[:]
+                st.rerun()
+            elif not all_s and is_all_s:
+                st.session_state['sel_status'] = []
+                st.rerun()
             for s in statuses:
-                val = st.checkbox(f"{SEMOJI.get(s,'•')} {s}", value=(s in st.session_state['sel_status']), key=f"chk_s_{s}")
-                if val and s not in st.session_state['sel_status']:
-                    st.session_state['sel_status'].append(s)
-                elif not val and s in st.session_state['sel_status']:
-                    st.session_state['sel_status'].remove(s)
+                s_val = st.checkbox(f"{SEMOJI.get(s,'•')} {s}", value=(s in st.session_state['sel_status']), key=f"chk_s_{s}", disabled=all_s)
+                if not all_s:
+                    if s_val and s not in st.session_state['sel_status']:
+                        st.session_state['sel_status'].append(s)
+                    elif not s_val and s in st.session_state['sel_status']:
+                        st.session_state['sel_status'].remove(s)
 
     with fc3:
         n_t = len(st.session_state['sel_types'])
+        is_all_t = (n_t == len(types))
         with st.popover("🏷️ ประเภทงบ", use_container_width=True):
             st.markdown("**เลือกประเภทงบ**")
-            all_t = st.checkbox("ทั้งหมด", value=(n_t==len(types)), key="chk_all_t")
-            if all_t:
+            all_t = st.checkbox("ทั้งหมด", value=is_all_t, key="chk_all_t")
+            if all_t and not is_all_t:
                 st.session_state['sel_types'] = types[:]
+                st.rerun()
+            elif not all_t and is_all_t:
+                st.session_state['sel_types'] = []
+                st.rerun()
             for t in types:
-                val = st.checkbox(t, value=(t in st.session_state['sel_types']), key=f"chk_t_{t}")
-                if val and t not in st.session_state['sel_types']:
-                    st.session_state['sel_types'].append(t)
-                elif not val and t in st.session_state['sel_types']:
-                    st.session_state['sel_types'].remove(t)
+                t_val = st.checkbox(t, value=(t in st.session_state['sel_types']), key=f"chk_t_{t}", disabled=all_t)
+                if not all_t:
+                    if t_val and t not in st.session_state['sel_types']:
+                        st.session_state['sel_types'].append(t)
+                    elif not t_val and t in st.session_state['sel_types']:
+                        st.session_state['sel_types'].remove(t)
 
     sel_plants = st.session_state['sel_plants'] or plants
     sel_status = st.session_state['sel_status'] or statuses
