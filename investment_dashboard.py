@@ -29,27 +29,63 @@ st.markdown("""
 section[data-testid="stSidebar"] { display: none !important; }
 div[data-testid="collapsedControl"] { display: none !important; }
 
-/* ── Force Light Mode — ล็อกสีไม่ให้เปลี่ยนตาม Dark Mode ── */
-:root, html, body, .stApp, [data-theme="dark"], [data-theme="light"] {
-    color-scheme: light only !important;
-    --background-color: #f5f6fa !important;
-    --text-color: #1e293b !important;
-    --secondary-background-color: #ffffff !important;
-    filter: none !important;
+/* ── Force Light Mode ── */
+:root {
+    color-scheme: light !important;
 }
-.stApp {
-    background: #f5f6fa !important;
-    color: #1e293b !important;
-}
-/* ป้องกัน Streamlit inject dark theme */
-[data-testid="stAppViewContainer"] {
+html, body, .stApp, [data-testid="stAppViewContainer"],
+[data-testid="stMain"], .main, .block-container {
     background-color: #f5f6fa !important;
     color: #1e293b !important;
+    color-scheme: light !important;
 }
 [data-testid="stHeader"] { background: transparent !important; }
-/* force สีพื้นหลังทุก element */
-.element-container, .stMarkdown, .block-container {
+
+/* force data_editor / dataframe light */
+[data-testid="stDataFrameResizable"],
+[data-testid="data-grid-canvas"],
+.glideDataEditor, .dvn-scroller,
+[class*="gdg-"], [class*="glide-"],
+iframe { 
+    background: #ffffff !important;
     color: #1e293b !important;
+    color-scheme: light !important;
+}
+
+/* force all text elements */
+p, span, div, label, th, td, h1, h2, h3, h4 {
+    color: #1e293b !important;
+}
+
+/* force stMarkdown, widgets */
+.stMarkdown, .element-container,
+[data-testid="stMarkdownContainer"] {
+    color: #1e293b !important;
+}
+
+/* force metric / card backgrounds */
+[data-testid="metric-container"],
+[data-testid="stMetric"] {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+/* force checkbox, selectbox */
+[data-testid="stCheckbox"] label,
+[data-testid="stSelectbox"] label,
+[data-testid="stMultiSelect"] label {
+    color: #1e293b !important;
+}
+
+/* force popover */
+[data-testid="stPopover"] {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+/* bar chart y-axis text */
+.ytick text, .xtick text, .legendtext {
+    fill: #1e293b !important;
 }
 section[data-testid="stSidebar"] { background: #ffffff; border-right: 1px solid #e2e8f0; }
 section[data-testid="stSidebar"] * { color: #334155 !important; }
@@ -645,53 +681,96 @@ def page_dashboard():
 
     # ── Table ─────────────────────────────────────────────────────────────────
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ — ติ๊ก checkbox เพื่อดูรายละเอียด</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ</div>', unsafe_allow_html=True)
 
-    tbl = df[["No.","Plant","ประเภทงบ","ชื่อโครงการ",
-              "Total_Budget","Budget_Used","Available_Budget",
-              "Progress_%","Status","Update_Date"]].copy()
-    tbl.insert(0, "เลือก", False)
-    tbl["No."] = tbl["No."].astype(int)
-    tbl["Progress_%"] = pd.to_numeric(tbl["Progress_%"], errors="coerce").fillna(0)
-    tbl["Update_Date"] = tbl["Update_Date"].astype(str).replace("nan", "-").replace("NaT", "-")
-    PEMOJI = {"DC":"🔵 DC","KN":"🟢 KN","KS":"🟡 KS","PK":"🟣 PK","MCE":"🔴 MCE"}
-    SEMOJI = {"Completed":"✅ Completed","PR/PO":"🔷 PR/PO",
-              "On Process":"🟡 On Process","BOQ":"🔮 BOQ","N/A":"⬜ N/A"}
-    tbl["Plant"]  = tbl["Plant"].map(lambda x: PEMOJI.get(x, x))
-    tbl["Status"] = tbl["Status"].map(lambda x: SEMOJI.get(x, x))
-
-    edited = st.data_editor(
-        tbl,
-        use_container_width=True,
-        hide_index=True,
-        height=460,
-        column_order=["เลือก","Plant","ประเภทงบ","ชื่อโครงการ",
-                      "Total_Budget","Budget_Used","Available_Budget",
-                      "Progress_%","Status","Update_Date"],
-        column_config={
-            "เลือก":            st.column_config.CheckboxColumn("☑", width=40, default=False),
-            "No.":              None,
-            "Plant":            st.column_config.TextColumn("Plant", width=90),
-            "ประเภทงบ":         st.column_config.TextColumn("Type", width=190),
-            "ชื่อโครงการ":      st.column_config.TextColumn("Project Name", width=290),
-            "Total_Budget":     st.column_config.NumberColumn("Budget (฿)", width=115, format="฿%,.2f"),
-            "Budget_Used":      st.column_config.NumberColumn("Used (฿)", width=115, format="฿%,.2f"),
-            "Available_Budget": st.column_config.NumberColumn("Remain (฿)", width=115, format="฿%,.2f"),
-            "Progress_%":       st.column_config.ProgressColumn("Progress", width=130, min_value=0, max_value=100, format="%.0f%%"),
-            "Status":           st.column_config.TextColumn("Status", width=125),
-            "Update_Date":      st.column_config.TextColumn("Updated", width=90),
-        },
-        disabled=["No.","Plant","ประเภทงบ","ชื่อโครงการ",
-                  "Total_Budget","Budget_Used","Available_Budget",
-                  "Progress_%","Status","Update_Date"]
-    )
-
-    selected = edited[edited["เลือก"] == True]
-    if not selected.empty:
-        no = int(selected.iloc[0]["No."])
+    opts = ["— เลือกโครงการเพื่อดูรายละเอียด —"] + [
+        f"#{int(r['No.']):02d}  {r['ชื่อโครงการ']}" for _, r in df.iterrows()
+    ]
+    sel = st.selectbox("เลือกโครงการ", opts, label_visibility="collapsed", key="proj_sel")
+    if sel != "— เลือกโครงการเพื่อดูรายละเอียด —":
+        no = int(sel.split()[0].replace("#",""))
         st.session_state.selected_no = no
         st.session_state.page = "detail"
         st.rerun()
+
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+
+    PBADGE = {
+        'DC':'background:#dbeafe;color:#1d4ed8','KN':'background:#d1fae5;color:#065f46',
+        'KS':'background:#fef3c7;color:#92400e','PK':'background:#ede9fe;color:#5b21b6',
+        'MCE':'background:#fee2e2;color:#991b1b'
+    }
+    SBADGE = {
+        'Completed':'background:#dcfce7;color:#16a34a','PR/PO':'background:#dbeafe;color:#1d4ed8',
+        'On Process':'background:#fef9c3;color:#854d0e','BOQ':'background:#f3e8ff;color:#6b21a8',
+        'N/A':'background:#f1f5f9;color:#64748b'
+    }
+
+    rows_html = ""
+    for _, r in df.iterrows():
+        no     = int(r["No."])
+        plant  = str(r["Plant"])
+        ptype  = str(r["ประเภทงบ"])
+        name   = str(r["ชื่อโครงการ"])
+        total  = "฿"+f"{r['Total_Budget']:,.2f}" if pd.notna(r["Total_Budget"]) else "-"
+        used   = "฿"+f"{r['Budget_Used']:,.2f}"  if pd.notna(r["Budget_Used"])  else "-"
+        remain = "฿"+f"{r['Available_Budget']:,.2f}" if pd.notna(r["Available_Budget"]) else "-"
+        pct    = float(r["Progress_%"]) if pd.notna(r["Progress_%"]) else 0
+        status = str(r["Status"])
+        upd    = str(r.get("Update_Date","")) if str(r.get("Update_Date","")) not in ("nan","","NaT","-") else "-"
+        pc     = PLANT_COLOR.get(plant,"#94a3b8")
+        pb_css = PBADGE.get(plant,"background:#f1f5f9;color:#64748b")
+        sb_css = SBADGE.get(status,"background:#f1f5f9;color:#64748b")
+        bar_c  = "#22c55e" if pct>=100 else "#3b82f6" if pct>=50 else "#f59e0b"
+        if pd.notna(r["Available_Budget"]) and pd.notna(r["Total_Budget"]) and r["Total_Budget"]>0:
+            ratio = r["Available_Budget"]/r["Total_Budget"]
+            rc = "#10b981" if ratio>0.5 else "#f59e0b" if ratio>0.2 else "#ef4444"
+        else:
+            rc = "#64748b"
+
+        pct_cell = (
+            '<div style="display:flex;align-items:center;gap:6px;">'
+            '<div style="flex:1;height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden;">'
+            f'<div style="width:{min(pct,100):.0f}%;height:100%;background:{bar_c};border-radius:4px;"></div>'
+            '</div>'
+            f'<span style="font-size:11px;font-weight:700;color:{bar_c};white-space:nowrap;">{pct:.0f}%</span>'
+            '</div>'
+        )
+        rows_html += (
+            "<tr style='border-bottom:1px solid #f1f5f9;'>"
+            f"<td style='padding:9px 10px;text-align:center;color:#94a3b8;font-size:12px;'>{no}</td>"
+            f"<td style='padding:9px 8px;'><span style='display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{pb_css}'>{plant}</span></td>"
+            f"<td style='padding:9px 8px;font-size:12px;color:#64748b;'>{ptype}</td>"
+            f"<td style='padding:9px 8px;font-weight:500;color:#1e293b;'>{name}</td>"
+            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:#334155;'>{total}</td>"
+            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:#10b981;font-weight:600;'>{used}</td>"
+            f"<td style='padding:9px 8px;text-align:right;font-size:12px;color:{rc};font-weight:600;'>{remain}</td>"
+            f"<td style='padding:9px 10px;'>{pct_cell}</td>"
+            f"<td style='padding:9px 8px;'><span style='display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;{sb_css}'>{status}</span></td>"
+            f"<td style='padding:9px 8px;font-size:11px;color:#94a3b8;'>{upd}</td>"
+            "</tr>"
+        )
+
+    table_html = (
+        '<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,0.06);margin-bottom:8px;">'
+        '<div style="overflow-x:auto;max-height:480px;overflow-y:auto;">'
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Sarabun,sans-serif;">'
+        '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">'
+        '<th style="padding:10px;text-align:center;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;width:44px">No.</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:75px">Plant</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:175px">ประเภทงบ</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;">ชื่อโครงการ</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">งบรวม (฿)</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">ใช้แล้ว (฿)</th>'
+        '<th style="padding:10px 8px;text-align:right;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:115px">คงเหลือ (฿)</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:135px">Progress</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:105px">Status</th>'
+        '<th style="padding:10px 8px;text-align:left;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;width:90px">Updated</th>'
+        '</tr></thead>'
+        f'<tbody>{rows_html}</tbody>'
+        '</table></div></div>'
+    )
+    st.markdown(table_html, unsafe_allow_html=True)
 
     st.markdown('<div style="text-align:center;padding:20px 0 4px;font-size:11px;color:#94a3b8;">MITR PHOL BIO FUEL · Investment Budget Dashboard · ปีงบประมาณ 2569</div>', unsafe_allow_html=True)
 
