@@ -100,10 +100,10 @@ section[data-testid="stSidebar"] label { font-size:12px !important; font-weight:
 .kpi-card .lbl { font-size:11px; color:#94a3b8; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
 .kpi-card .val { font-size:26px; font-weight:700; color:#1e293b; margin:6px 0 2px; }
 .kpi-card .sub { font-size:11px; color:#64748b; }
-.plant-card { background:#fff; border-radius:12px; padding:16px; text-align:center; border:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
-.plant-card .pname { font-size:11px; color:#64748b; font-weight:600; letter-spacing:0.5px; }
-.plant-card .pcount { font-size:32px; font-weight:700; margin:4px 0; }
-.plant-card .pbudget { font-size:11px; color:#94a3b8; }
+.plant-card { background:#fff; border-radius:8px; padding:6px 8px; text-align:center; border:1px solid #e2e8f0; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.plant-card .pname { font-size:10px; color:#64748b; font-weight:600; letter-spacing:0.5px; }
+.plant-card .pcount { font-size:18px; font-weight:700; margin:1px 0; }
+.plant-card .pbudget { font-size:10px; color:#94a3b8; }
 .sec-hdr { font-size:13px; font-weight:700; color:#475569; letter-spacing:1.5px; text-transform:uppercase; padding-bottom:8px; border-bottom:2px solid #e2e8f0; margin-bottom:14px; }
 .chart-box { background:#fff; border-radius:14px; padding:18px 16px; box-shadow:0 1px 8px rgba(0,0,0,0.06); margin-bottom:16px; }
 .pb-wrap { margin-bottom:10px; }
@@ -422,7 +422,7 @@ def page_detail():
                     f'<div style="font-size:11px;color:#64748b;">{fmt(v,"full")}</div>'
                     f'</div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     ic1, ic2 = st.columns(2)
     with ic1:
         st.markdown(f'<div class="info-card"><div class="card-title">🎯 วัตถุประสงค์ (Objective)</div><div class="card-body">{get_objective(row)}</div></div>', unsafe_allow_html=True)
@@ -438,7 +438,7 @@ def page_detail():
     with md2: st.markdown(f'<div class="info-card"><div class="card-title">📅 วันที่อัปเดต</div><div class="card-body" style="font-size:20px;font-weight:700;color:#1d4ed8;">{update}</div></div>', unsafe_allow_html=True)
     with md3: st.markdown(f'<div class="info-card"><div class="card-title">📈 IRR / NPV / Payback</div><div class="card-body" style="font-weight:700;color:#10b981;">{irr_val}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown('<div class="sec-hdr">📷 รูปภาพโครงการ</div>', unsafe_allow_html=True)
 
     proj_no = int(row['No.'])
@@ -577,8 +577,8 @@ def page_dashboard():
     /* filter row — ไม่มีพื้นหลัง */
     div[data-testid="stHorizontalBlock"]:has(div[data-testid="stPopover"]) {
         background: transparent !important;
-        padding: 8px 0 !important;
-        margin-bottom: 12px !important;
+        padding: 4px 0 !important;
+        margin-bottom: 6px !important;
     }
     /* ปุ่ม popover — สีขาว ตัวหนังสือน้ำเงิน คงที่ทั้ง dark/light */
     div[data-testid="stPopover"] > div > button {
@@ -588,11 +588,12 @@ def page_dashboard():
         color: #1d4ed8 !important;
         font-size: 13px !important;
         font-weight: 700 !important;
-        padding: 7px 18px !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+        padding: 4px 14px !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15) !important;
         text-align: center !important;
         justify-content: center !important;
-        min-width: 120px !important;
+        min-width: 80px !important;
+        font-size: 12px !important;
     }
     div[data-testid="stPopover"] > div > button:hover {
         background-color: #dbeafe !important;
@@ -711,16 +712,16 @@ def page_dashboard():
          ("Available",fmt(total_avail),"คงเหลือ","#f59e0b")]):
         with col:
             st.markdown(
-                f'<div style="background:#fff;border-radius:14px;padding:20px 22px;'
+                f'<div style="background:#fff;border-radius:10px;padding:8px 14px;'
                 f'border-left:4px solid {acc};box-shadow:0 1px 8px rgba(0,0,0,0.06);">'
-                f'<div style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:1px;text-transform:uppercase;">{lbl}</div>'
-                f'<div style="font-size:26px;font-weight:700;color:#1e293b;margin:6px 0 2px;">{val}</div>'
-                f'<div style="font-size:11px;color:#64748b;">{sub}</div>'
+                f'<div style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;">{lbl}</div>'
+                f'<div style="font-size:16px;font-weight:700;color:#1e293b;margin:2px 0 1px;">{val}</div>'
+                f'<div style="font-size:10px;color:#64748b;">{sub}</div>'
                 f'</div>',
                 unsafe_allow_html=True
             )
 
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     st.markdown('<div class="sec-hdr">🏭 สรุปตาม Plant</div>', unsafe_allow_html=True)
     ps = df.groupby('Plant').agg(count=('No.','count'), budget=('Total_Budget','sum')).reset_index()
     cols_p = st.columns(len(ps)+1)
@@ -731,7 +732,7 @@ def page_dashboard():
         with cols_p[i+1]:
             st.markdown(f'<div class="plant-card" style="border-top:3px solid {c};"><div class="pname">{PLANT_FULL.get(r["Plant"],r["Plant"])}</div><div class="pcount" style="color:{c};">{int(r["count"])}</div><div class="pbudget">{fmt(r["budget"])}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
     ch1, ch2, ch3 = st.columns([1.3, 1, 1])
     with ch1:
         pb = df.groupby('Plant').agg(Total_Budget=('Total_Budget','sum'), Budget_Used=('Budget_Used','sum')).reset_index()
@@ -748,7 +749,7 @@ def page_dashboard():
         max_y = max(pb['Total_Budget'].max(), pb['Budget_Used'].fillna(0).max()) * 1.3
         fig.update_layout(**PLOT_CFG,
             title=dict(text='💰 งบประมาณตาม Plant', font=dict(size=13,color='#0f172a')),
-            height=300, barmode='group', showlegend=True,
+            height=240, barmode='group', showlegend=True,
             legend=dict(orientation='h', y=1.1, x=0, font=dict(color='#1e293b', size=12)),
             xaxis=dict(showgrid=False, color='#64748b'),
             yaxis=dict(showgrid=True, gridcolor='#f1f5f9', color='#64748b',
@@ -759,7 +760,7 @@ def page_dashboard():
         fig2 = go.Figure(go.Pie(labels=tc['ประเภทงบ'], values=tc['No.'], hole=0.55, marker=dict(colors=[
                 TYPE_COLOR.get(t, ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#94a3b8'][i%7])
                 for i,t in enumerate(tc['ประเภทงบ'])], line=dict(color='#fff',width=2)), textfont=dict(size=10), hovertemplate='<b>%{label}</b><br>%{value} โครงการ (%{percent})<extra></extra>'))
-        fig2.update_layout(**PLOT_CFG, title=dict(text="🏷️ Budget Type", font=dict(size=13,color='#0f172a')), height=300, legend=dict(font=dict(size=9)))
+        fig2.update_layout(**PLOT_CFG, title=dict(text="🏷️ Budget Type", font=dict(size=13,color='#0f172a')), height=240, legend=dict(font=dict(size=9)))
         st.plotly_chart(fig2, use_container_width=True, config={'displayModeBar':False})
     with ch3:
         STATUS_ORDER = ['Not Start','N/A','BOQ','PR/PO','PR','On Process','On Progress','Completed']
@@ -769,7 +770,7 @@ def page_dashboard():
         fig3 = go.Figure(go.Bar(x=sc['No.'], y=sc['Status'], orientation='h',
             marker_color=[STATUS_COLOR.get(s,'#94a3b8') for s in sc['Status']],
             text=sc['No.'], textposition='outside', textfont=dict(size=12,color='#334155')))
-        fig3.update_layout(**PLOT_CFG, title=dict(text="📊 Status", font=dict(size=13,color='#0f172a')), height=300, showlegend=False, xaxis=dict(showgrid=True,gridcolor='#f1f5f9',color='#64748b'), yaxis=dict(showgrid=False,color='#1e293b',tickfont=dict(color='#1e293b',size=12)))
+        fig3.update_layout(**PLOT_CFG, title=dict(text="📊 Status", font=dict(size=13,color='#0f172a')), height=240, showlegend=False, xaxis=dict(showgrid=True,gridcolor='#f1f5f9',color='#64748b'), yaxis=dict(showgrid=False,color='#1e293b',tickfont=dict(color='#1e293b',size=12)))
         st.plotly_chart(fig3, use_container_width=True, config={'displayModeBar':False})
 
     pb_col, pie_col = st.columns([1.6, 1])
@@ -796,11 +797,11 @@ def page_dashboard():
         card = (
             '<div style="background:#fff;border-radius:14px;'
             'box-shadow:0 1px 8px rgba(0,0,0,0.06);'
-            f'height:420px;display:flex;flex-direction:column;overflow:hidden;">'
+            f'height:340px;display:flex;flex-direction:column;overflow:hidden;">'
             '<div style="font-size:13px;font-weight:700;color:#475569;'
             'padding:18px 16px 10px;flex-shrink:0;'
             'border-bottom:1px solid #f1f5f9;">📊 Progress</div>'
-            f'<div style="overflow-y:auto;padding:14px 16px;flex:1;">{bars_html}</div>'
+            f'<div style="overflow-y:auto;padding:8px 12px;flex:1;">{bars_html}</div>'
             '</div>'
         )
         st.markdown(card, unsafe_allow_html=True)
@@ -813,12 +814,12 @@ def page_dashboard():
             hovertemplate='<b>%{label}</b><br>฿%{value:,.0f}<br>%{percent}<extra></extra>'))
         fig4.update_layout(**PLOT_CFG,
             title=dict(text='🗺️ สัดส่วนงบตาม Plant', font=dict(size=13,color='#0f172a')),
-            height=420, showlegend=False)
+            height=340, showlegend=False)
         st.plotly_chart(fig4, use_container_width=True, config={'displayModeBar':False})
 
 
     # ── Table ─────────────────────────────────────────────────────────────────
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     st.markdown('<div class="sec-hdr">📋 รายละเอียดโครงการ</div>', unsafe_allow_html=True)
 
     PBADGE = {
@@ -895,7 +896,7 @@ def page_dashboard():
     table_html = (
         '<div style="background:#fff;border-radius:14px;overflow:hidden;'
         'box-shadow:0 1px 8px rgba(0,0,0,0.06);margin-bottom:8px;">'
-        '<div style="overflow-x:auto;max-height:520px;overflow-y:auto;">'
+        '<div style="overflow-x:auto;max-height:380px;overflow-y:auto;">'
         '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Sarabun,sans-serif;">'
         '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;position:sticky;top:0;z-index:2;">'
         '<th style="padding:10px;text-align:center;font-size:10px;font-weight:700;color:#475569;letter-spacing:.8px;text-transform:uppercase;width:44px">No.</th>'
